@@ -19,6 +19,7 @@ use Andmarruda\InstagramLaravel\Domain\Contracts\OAuthClientInterface;
 use Andmarruda\InstagramLaravel\Infrastructure\Http\InstagramContentPublishingHttpAdapter;
 use Andmarruda\InstagramLaravel\Infrastructure\Http\InstagramOAuthHttpAdapter;
 use GuzzleHttp\Client;
+use GuzzleHttp\ClientInterface;
 use Illuminate\Support\ServiceProvider;
 
 class InstagramServiceProvider extends ServiceProvider
@@ -30,13 +31,19 @@ class InstagramServiceProvider extends ServiceProvider
             'instagram'
         );
 
+        // Shared HTTP client with sensible timeouts.
+        $this->app->singleton(ClientInterface::class, fn () => new Client([
+            'timeout'         => 30,
+            'connect_timeout' => 5,
+        ]));
+
         // --- OAuth ---
 
         $this->app->singleton(OAuthClientInterface::class, function ($app) {
             $config = $app->make('config')->get('instagram');
 
             return new InstagramOAuthHttpAdapter(
-                httpClient: new Client(),
+                httpClient: $app->make(ClientInterface::class),
                 clientId: $config['client_id'] ?? '',
                 clientSecret: $config['client_secret'] ?? '',
             );
@@ -56,8 +63,8 @@ class InstagramServiceProvider extends ServiceProvider
 
         // --- Content Publishing ---
 
-        $this->app->singleton(ContentPublishingClientInterface::class, fn () =>
-            new InstagramContentPublishingHttpAdapter(new Client()));
+        $this->app->singleton(ContentPublishingClientInterface::class, fn ($app) =>
+            new InstagramContentPublishingHttpAdapter($app->make(ClientInterface::class)));
 
         $this->app->bind(CreateImageContainerUseCase::class, fn ($app) =>
             new CreateImageContainerUseCase($app->make(ContentPublishingClientInterface::class)));

@@ -7,9 +7,8 @@ namespace Andmarruda\InstagramLaravel\Domain\ValueObjects;
 final class PublishingLimit
 {
     public function __construct(
-        public readonly int $quota24hAllotment,
-        public readonly int $configQuota24hAllotment,
-        public readonly int $percentUsed,
+        public readonly int $quotaUsage,
+        public readonly int $quotaTotal,
     ) {}
 
     public static function fromApiResponse(array $response): self
@@ -17,14 +16,22 @@ final class PublishingLimit
         $data = $response['data'][0] ?? $response;
 
         return new self(
-            quota24hAllotment: (int) ($data['quota_usage'] ?? 0),
-            configQuota24hAllotment: (int) ($data['config']['quota_total'] ?? 100),
-            percentUsed: (int) ($data['quota_usage'] ?? 0),
+            quotaUsage: (int) ($data['quota_usage'] ?? 0),
+            quotaTotal: (int) ($data['config']['quota_total'] ?? 100),
         );
+    }
+
+    public function percentUsed(): int
+    {
+        if ($this->quotaTotal === 0) {
+            return 0;
+        }
+
+        return (int) round(($this->quotaUsage / $this->quotaTotal) * 100);
     }
 
     public function hasReachedLimit(): bool
     {
-        return $this->quota24hAllotment >= $this->configQuota24hAllotment;
+        return $this->quotaUsage >= $this->quotaTotal;
     }
 }

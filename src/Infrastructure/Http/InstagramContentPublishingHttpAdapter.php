@@ -12,11 +12,12 @@ use Andmarruda\InstagramLaravel\Domain\ValueObjects\PublishingLimit;
 use Andmarruda\InstagramLaravel\Infrastructure\Http\Exceptions\InstagramPublishingException;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\GuzzleException;
+use Psr\Http\Message\StreamInterface;
 
 final class InstagramContentPublishingHttpAdapter implements ContentPublishingClientInterface
 {
-    private const BASE_URL     = 'https://graph.instagram.com';
-    private const API_VERSION  = 'v21.0';
+    private const BASE_URL    = 'https://graph.instagram.com';
+    private const API_VERSION = 'v21.0';
 
     public function __construct(
         private readonly ClientInterface $httpClient,
@@ -28,9 +29,7 @@ final class InstagramContentPublishingHttpAdapter implements ContentPublishingCl
         string $imageUrl,
         array $options = [],
     ): string {
-        $payload = array_merge($options, ['image_url' => $imageUrl]);
-
-        return $this->postMedia($igId, $accessToken, $payload);
+        return $this->postMedia($igId, $accessToken, array_merge($options, ['image_url' => $imageUrl]));
     }
 
     public function createVideoContainer(
@@ -40,12 +39,10 @@ final class InstagramContentPublishingHttpAdapter implements ContentPublishingCl
         MediaType $mediaType,
         array $options = [],
     ): string {
-        $payload = array_merge($options, [
+        return $this->postMedia($igId, $accessToken, array_merge($options, [
             'video_url'  => $videoUrl,
             'media_type' => $mediaType->value,
-        ]);
-
-        return $this->postMedia($igId, $accessToken, $payload);
+        ]));
     }
 
     public function createCarouselItemContainer(
@@ -53,17 +50,7 @@ final class InstagramContentPublishingHttpAdapter implements ContentPublishingCl
         string $accessToken,
         CarouselItem $item,
     ): string {
-        $urlKey  = $item->mediaType === MediaType::Image ? 'image_url' : 'video_url';
-        $payload = array_merge($item->options, [
-            $urlKey            => $item->url,
-            'is_carousel_item' => true,
-        ]);
-
-        if ($item->mediaType !== MediaType::Image) {
-            $payload['media_type'] = $item->mediaType->value;
-        }
-
-        return $this->postMedia($igId, $accessToken, $payload);
+        return $this->postMedia($igId, $accessToken, $item->toPayload());
     }
 
     public function createCarouselContainer(
@@ -89,7 +76,7 @@ final class InstagramContentPublishingHttpAdapter implements ContentPublishingCl
     {
         try {
             $response = $this->httpClient->request('GET', $this->url($containerId), [
-                'headers' => ['Authorization' => "Bearer {$accessToken}"],
+                'headers' => $this->buildHeaders($accessToken),
                 'query'   => ['fields' => 'status_code'],
             ]);
 
@@ -109,11 +96,8 @@ final class InstagramContentPublishingHttpAdapter implements ContentPublishingCl
     {
         try {
             $response = $this->httpClient->request('POST', $this->url("{$igId}/media_publish"), [
-                'headers' => [
-                    'Authorization' => "Bearer {$accessToken}",
-                    'Content-Type'  => 'application/json',
-                ],
-                'json' => ['creation_id' => $containerId],
+                'headers' => $this->buildHeaders($accessToken, json: true),
+                'json'    => ['creation_id' => $containerId],
             ]);
 
             $body = $this->decode($response->getBody());
@@ -132,7 +116,7 @@ final class InstagramContentPublishingHttpAdapter implements ContentPublishingCl
     {
         try {
             $response = $this->httpClient->request('GET', $this->url("{$igId}/content_publishing_limit"), [
-                'headers' => ['Authorization' => "Bearer {$accessToken}"],
+                'headers' => $this->buildHeaders($accessToken),
                 'query'   => ['fields' => 'config,quota_usage'],
             ]);
 
@@ -156,11 +140,8 @@ final class InstagramContentPublishingHttpAdapter implements ContentPublishingCl
     {
         try {
             $response = $this->httpClient->request('POST', $this->url("{$igId}/media"), [
-                'headers' => [
-                    'Authorization' => "Bearer {$accessToken}",
-                    'Content-Type'  => 'application/json',
-                ],
-                'json' => $payload,
+                'headers' => $this->buildHeaders($accessToken, json: true),
+                'json'    => $payload,
             ]);
 
             $body = $this->decode($response->getBody());
@@ -175,19 +156,29 @@ final class InstagramContentPublishingHttpAdapter implements ContentPublishingCl
         }
     }
 
+    /** @return array<string, string> */
+    private function buildHeaders(string $accessToken, bool $json = false): array
+    {
+        $headers = ['Authorization' => "Bearer {$accessToken}"];
+
+        if ($json) {
+            $headers['Content-Type'] = 'application/json';
+        }
+
+        return $headers;
+    }
+
     private function url(string $path): string
     {
         return sprintf('%s/%s/%s', self::BASE_URL, self::API_VERSION, ltrim($path, '/'));
     }
 
-    private function decode(\Psr\Http\Message\StreamInterface $body): array
+    private function decode(StreamInterface $body): array
     {
         return json_decode((string) $body, true, 512, JSON_THROW_ON_ERROR);
     }
 
-    /**
-     * @throws InstagramPublishingException
-     */
+    /** @throws InstagramPublishingException */
     private function assertNoError(array $body): void
     {
         if (isset($body['error'])) {

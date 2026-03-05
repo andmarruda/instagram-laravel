@@ -25,17 +25,17 @@ final class InstagramManager
 {
     public function __construct(
         // OAuth
-        private readonly GetAuthorizationUrlUseCase $getAuthorizationUrl,
-        private readonly ExchangeCodeForTokenUseCase $exchangeCodeForToken,
-        private readonly GetLongLivedTokenUseCase $getLongLivedToken,
-        private readonly RefreshLongLivedTokenUseCase $refreshLongLivedToken,
+        private readonly GetAuthorizationUrlUseCase $authorizationUrlUseCase,
+        private readonly ExchangeCodeForTokenUseCase $exchangeCodeForTokenUseCase,
+        private readonly GetLongLivedTokenUseCase $getLongLivedTokenUseCase,
+        private readonly RefreshLongLivedTokenUseCase $refreshLongLivedTokenUseCase,
         // Publishing
-        private readonly CreateImageContainerUseCase $createImageContainer,
-        private readonly CreateVideoContainerUseCase $createVideoContainer,
-        private readonly CreateCarouselContainerUseCase $createCarouselContainer,
-        private readonly CheckContainerStatusUseCase $checkContainerStatus,
-        private readonly PublishContainerUseCase $publishContainer,
-        private readonly GetPublishingLimitUseCase $getPublishingLimit,
+        private readonly CreateImageContainerUseCase $createImageContainerUseCase,
+        private readonly CreateVideoContainerUseCase $createVideoContainerUseCase,
+        private readonly CreateCarouselContainerUseCase $createCarouselContainerUseCase,
+        private readonly CheckContainerStatusUseCase $checkContainerStatusUseCase,
+        private readonly PublishContainerUseCase $publishContainerUseCase,
+        private readonly GetPublishingLimitUseCase $getPublishingLimitUseCase,
     ) {}
 
     // =========================================================================
@@ -51,22 +51,22 @@ final class InstagramManager
         $redirectUri = $redirectUri ?? config('instagram.redirect_uri');
         $scopes      = $scopes ?? Scope::fromArray(config('instagram.scopes', [Scope::Basic->value]));
 
-        return $this->getAuthorizationUrl->execute($redirectUri, $scopes, $options);
+        return $this->authorizationUrlUseCase->execute($redirectUri, $scopes, $options);
     }
 
     public function exchangeCode(string $code, ?string $redirectUri = null): AccessToken
     {
-        return $this->exchangeCodeForToken->execute($code, $redirectUri ?? config('instagram.redirect_uri'));
+        return $this->exchangeCodeForTokenUseCase->execute($code, $redirectUri ?? config('instagram.redirect_uri'));
     }
 
     public function longLivedToken(string $shortLivedToken): AccessToken
     {
-        return $this->getLongLivedToken->execute($shortLivedToken);
+        return $this->getLongLivedTokenUseCase->execute($shortLivedToken);
     }
 
     public function refreshToken(string $longLivedToken): AccessToken
     {
-        return $this->refreshLongLivedToken->execute($longLivedToken);
+        return $this->refreshLongLivedTokenUseCase->execute($longLivedToken);
     }
 
     // =========================================================================
@@ -86,7 +86,7 @@ final class InstagramManager
         string $imageUrl,
         array $options = [],
     ): string {
-        return $this->createImageContainer->execute($igId, $accessToken, $imageUrl, $options);
+        return $this->createImageContainerUseCase->execute($igId, $accessToken, $imageUrl, $options);
     }
 
     /**
@@ -103,7 +103,7 @@ final class InstagramManager
         MediaType $mediaType = MediaType::Video,
         array $options = [],
     ): string {
-        return $this->createVideoContainer->execute($igId, $accessToken, $videoUrl, $mediaType, $options);
+        return $this->createVideoContainerUseCase->execute($igId, $accessToken, $videoUrl, $mediaType, $options);
     }
 
     /**
@@ -121,7 +121,7 @@ final class InstagramManager
         string $caption = '',
         array $options = [],
     ): string {
-        return $this->createCarouselContainer->execute($igId, $accessToken, $items, $caption, $options);
+        return $this->createCarouselContainerUseCase->execute($igId, $accessToken, $items, $caption, $options);
     }
 
     /**
@@ -130,7 +130,7 @@ final class InstagramManager
      */
     public function containerStatus(string $containerId, string $accessToken): ContainerStatus
     {
-        return $this->checkContainerStatus->execute($containerId, $accessToken);
+        return $this->checkContainerStatusUseCase->execute($containerId, $accessToken);
     }
 
     /**
@@ -140,7 +140,7 @@ final class InstagramManager
      */
     public function publish(string $igId, string $accessToken, string $containerId): string
     {
-        return $this->publishContainer->execute($igId, $accessToken, $containerId);
+        return $this->publishContainerUseCase->execute($igId, $accessToken, $containerId);
     }
 
     /**
@@ -148,6 +148,6 @@ final class InstagramManager
      */
     public function publishingLimit(string $igId, string $accessToken): PublishingLimit
     {
-        return $this->getPublishingLimit->execute($igId, $accessToken);
+        return $this->getPublishingLimitUseCase->execute($igId, $accessToken);
     }
 }

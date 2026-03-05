@@ -10,6 +10,7 @@ use Andmarruda\InstagramLaravel\Domain\ValueObjects\Scope;
 use Andmarruda\InstagramLaravel\Infrastructure\Http\Exceptions\InstagramOAuthException;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\GuzzleException;
+use Psr\Http\Message\StreamInterface;
 
 final class InstagramOAuthHttpAdapter implements OAuthClientInterface
 {
@@ -55,8 +56,7 @@ final class InstagramOAuthHttpAdapter implements OAuthClientInterface
                 ],
             ]);
 
-            $body = json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
-
+            $body = $this->decode($response->getBody());
             $this->assertNoError($body);
 
             return AccessToken::fromShortLivedResponse($body);
@@ -67,43 +67,44 @@ final class InstagramOAuthHttpAdapter implements OAuthClientInterface
 
     public function getLongLivedToken(string $shortLivedToken): AccessToken
     {
-        try {
-            $response = $this->httpClient->request('GET', self::GRAPH_BASE_URL . '/access_token', [
-                'query' => [
-                    'grant_type'    => 'ig_exchange_token',
-                    'client_secret' => $this->clientSecret,
-                    'access_token'  => $shortLivedToken,
-                ],
-            ]);
-
-            $body = json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
-
-            $this->assertNoError($body);
-
-            return AccessToken::fromLongLivedResponse($body);
-        } catch (GuzzleException $e) {
-            throw new InstagramOAuthException('Failed to get long-lived token: ' . $e->getMessage(), previous: $e);
-        }
+        return $this->fetchLongLivedToken('/access_token', [
+            'grant_type'    => 'ig_exchange_token',
+            'client_secret' => $this->clientSecret,
+            'access_token'  => $shortLivedToken,
+        ], 'Failed to get long-lived token');
     }
 
     public function refreshLongLivedToken(string $longLivedToken): AccessToken
     {
+        return $this->fetchLongLivedToken('/refresh_access_token', [
+            'grant_type'   => 'ig_refresh_token',
+            'access_token' => $longLivedToken,
+        ], 'Failed to refresh long-lived token');
+    }
+
+    // -------------------------------------------------------------------------
+    // Internals
+    // -------------------------------------------------------------------------
+
+    private function fetchLongLivedToken(string $path, array $query, string $errorPrefix): AccessToken
+    {
         try {
-            $response = $this->httpClient->request('GET', self::GRAPH_BASE_URL . '/refresh_access_token', [
-                'query' => [
-                    'grant_type'   => 'ig_refresh_token',
-                    'access_token' => $longLivedToken,
-                ],
+            $response = $this->httpClient->request('GET', self::GRAPH_BASE_URL . $path, [
+                'query' => $query,
             ]);
 
-            $body = json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
-
+            $body = $this->decode($response->getBody());
             $this->assertNoError($body);
 
             return AccessToken::fromLongLivedResponse($body);
         } catch (GuzzleException $e) {
-            throw new InstagramOAuthException('Failed to refresh long-lived token: ' . $e->getMessage(), previous: $e);
+            throw new InstagramOAuthException($errorPrefix . ': ' . $e->getMessage(), previous: $e);
         }
+    }
+
+    private function decode(StreamInterface $body): array
+    {
+        return json_decode((string) $body, true, 512, JSON_THROW_ON_ERROR);
     }
 
     /**
