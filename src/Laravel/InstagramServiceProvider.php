@@ -11,12 +11,16 @@ use Andmarruda\InstagramLaravel\Application\UseCases\CreateVideoContainerUseCase
 use Andmarruda\InstagramLaravel\Application\UseCases\ExchangeCodeForTokenUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\GetAuthorizationUrlUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\GetLongLivedTokenUseCase;
+use Andmarruda\InstagramLaravel\Application\UseCases\GetAccountInsightsUseCase;
+use Andmarruda\InstagramLaravel\Application\UseCases\GetMediaInsightsUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\GetPublishingLimitUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\PublishContainerUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\RefreshLongLivedTokenUseCase;
 use Andmarruda\InstagramLaravel\Domain\Contracts\ContentPublishingClientInterface;
+use Andmarruda\InstagramLaravel\Domain\Contracts\InsightsClientInterface;
 use Andmarruda\InstagramLaravel\Domain\Contracts\OAuthClientInterface;
 use Andmarruda\InstagramLaravel\Infrastructure\Http\InstagramContentPublishingHttpAdapter;
+use Andmarruda\InstagramLaravel\Infrastructure\Http\InstagramInsightsHttpAdapter;
 use Andmarruda\InstagramLaravel\Infrastructure\Http\InstagramOAuthHttpAdapter;
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
@@ -84,6 +88,17 @@ class InstagramServiceProvider extends ServiceProvider
         $this->app->bind(GetPublishingLimitUseCase::class, fn ($app) =>
             new GetPublishingLimitUseCase($app->make(ContentPublishingClientInterface::class)));
 
+        // --- Insights ---
+
+        $this->app->singleton(InsightsClientInterface::class, fn ($app) =>
+            new InstagramInsightsHttpAdapter($app->make(ClientInterface::class)));
+
+        $this->app->bind(GetAccountInsightsUseCase::class, fn ($app) =>
+            new GetAccountInsightsUseCase($app->make(InsightsClientInterface::class)));
+
+        $this->app->bind(GetMediaInsightsUseCase::class, fn ($app) =>
+            new GetMediaInsightsUseCase($app->make(InsightsClientInterface::class)));
+
         // --- Manager ---
 
         $this->app->singleton(InstagramManager::class, fn ($app) => new InstagramManager(
@@ -97,6 +112,8 @@ class InstagramServiceProvider extends ServiceProvider
             $app->make(CheckContainerStatusUseCase::class),
             $app->make(PublishContainerUseCase::class),
             $app->make(GetPublishingLimitUseCase::class),
+            $app->make(GetAccountInsightsUseCase::class),
+            $app->make(GetMediaInsightsUseCase::class),
         ));
     }
 

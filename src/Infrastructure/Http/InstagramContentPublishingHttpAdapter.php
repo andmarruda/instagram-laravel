@@ -9,15 +9,14 @@ use Andmarruda\InstagramLaravel\Domain\ValueObjects\CarouselItem;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\ContainerStatus;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\MediaType;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\PublishingLimit;
+use Andmarruda\InstagramLaravel\Infrastructure\Http\Concerns\GraphApiTrait;
 use Andmarruda\InstagramLaravel\Infrastructure\Http\Exceptions\InstagramPublishingException;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\GuzzleException;
-use Psr\Http\Message\StreamInterface;
 
 final class InstagramContentPublishingHttpAdapter implements ContentPublishingClientInterface
 {
-    private const BASE_URL    = 'https://graph.instagram.com';
-    private const API_VERSION = 'v21.0';
+    use GraphApiTrait;
 
     public function __construct(
         private readonly ClientInterface $httpClient,
@@ -154,28 +153,6 @@ final class InstagramContentPublishingHttpAdapter implements ContentPublishingCl
                 previous: $e,
             );
         }
-    }
-
-    /** @return array<string, string> */
-    private function buildHeaders(string $accessToken, bool $json = false): array
-    {
-        $headers = ['Authorization' => "Bearer {$accessToken}"];
-
-        if ($json) {
-            $headers['Content-Type'] = 'application/json';
-        }
-
-        return $headers;
-    }
-
-    private function url(string $path): string
-    {
-        return sprintf('%s/%s/%s', self::BASE_URL, self::API_VERSION, ltrim($path, '/'));
-    }
-
-    private function decode(StreamInterface $body): array
-    {
-        return json_decode((string) $body, true, 512, JSON_THROW_ON_ERROR);
     }
 
     /** @throws InstagramPublishingException */

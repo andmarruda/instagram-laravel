@@ -9,14 +9,20 @@ use Andmarruda\InstagramLaravel\Application\UseCases\CreateCarouselContainerUseC
 use Andmarruda\InstagramLaravel\Application\UseCases\CreateImageContainerUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\CreateVideoContainerUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\ExchangeCodeForTokenUseCase;
+use Andmarruda\InstagramLaravel\Application\UseCases\GetAccountInsightsUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\GetAuthorizationUrlUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\GetLongLivedTokenUseCase;
+use Andmarruda\InstagramLaravel\Application\UseCases\GetMediaInsightsUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\GetPublishingLimitUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\PublishContainerUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\RefreshLongLivedTokenUseCase;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\AccessToken;
+use Andmarruda\InstagramLaravel\Domain\ValueObjects\AccountMetric;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\CarouselItem;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\ContainerStatus;
+use Andmarruda\InstagramLaravel\Domain\ValueObjects\InsightMetric;
+use Andmarruda\InstagramLaravel\Domain\ValueObjects\InsightPeriod;
+use Andmarruda\InstagramLaravel\Domain\ValueObjects\MediaMetric;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\MediaType;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\PublishingLimit;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\Scope;
@@ -36,6 +42,9 @@ final class InstagramManager
         private readonly CheckContainerStatusUseCase $checkContainerStatusUseCase,
         private readonly PublishContainerUseCase $publishContainerUseCase,
         private readonly GetPublishingLimitUseCase $getPublishingLimitUseCase,
+        // Insights
+        private readonly GetAccountInsightsUseCase $getAccountInsightsUseCase,
+        private readonly GetMediaInsightsUseCase $getMediaInsightsUseCase,
     ) {}
 
     // =========================================================================
@@ -149,5 +158,42 @@ final class InstagramManager
     public function publishingLimit(string $igId, string $accessToken): PublishingLimit
     {
         return $this->getPublishingLimitUseCase->execute($igId, $accessToken);
+    }
+
+    // =========================================================================
+    // Insights
+    // =========================================================================
+
+    /**
+     * Get insights for an Instagram professional account.
+     *
+     * @param  AccountMetric[]  $metrics
+     * @param  array<string, mixed>  $options  Optional: since, until (Unix timestamps)
+     *
+     * @return InsightMetric[]
+     */
+    public function accountInsights(
+        string $igId,
+        string $accessToken,
+        array $metrics,
+        InsightPeriod $period = InsightPeriod::Day,
+        array $options = [],
+    ): array {
+        return $this->getAccountInsightsUseCase->execute($igId, $accessToken, $metrics, $period, $options);
+    }
+
+    /**
+     * Get insights for a specific media object.
+     *
+     * @param  MediaMetric[]  $metrics
+     *
+     * @return InsightMetric[]
+     */
+    public function mediaInsights(
+        string $mediaId,
+        string $accessToken,
+        array $metrics,
+    ): array {
+        return $this->getMediaInsightsUseCase->execute($mediaId, $accessToken, $metrics);
     }
 }

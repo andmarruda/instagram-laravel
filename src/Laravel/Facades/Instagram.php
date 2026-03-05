@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace Andmarruda\InstagramLaravel\Laravel\Facades;
 
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\AccessToken;
+use Andmarruda\InstagramLaravel\Domain\ValueObjects\AccountMetric;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\CarouselItem;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\ContainerStatus;
+use Andmarruda\InstagramLaravel\Domain\ValueObjects\InsightMetric;
+use Andmarruda\InstagramLaravel\Domain\ValueObjects\InsightPeriod;
+use Andmarruda\InstagramLaravel\Domain\ValueObjects\MediaMetric;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\MediaType;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\PublishingLimit;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\Scope;
@@ -27,6 +31,10 @@ use Illuminate\Support\Facades\Facade;
  * @method static ContainerStatus containerStatus(string $containerId, string $accessToken)
  * @method static string          publish(string $igId, string $accessToken, string $containerId)
  * @method static PublishingLimit publishingLimit(string $igId, string $accessToken)
+ *
+ * Insights
+ * @method static InsightMetric[] accountInsights(string $igId, string $accessToken, AccountMetric[] $metrics, InsightPeriod $period = InsightPeriod::Day, array $options = [])
+ * @method static InsightMetric[] mediaInsights(string $mediaId, string $accessToken, MediaMetric[] $metrics)
  *
  * @see InstagramManager
  */

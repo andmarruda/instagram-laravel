@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Andmarruda\InstagramLaravel\Domain\ValueObjects;
 
+use Andmarruda\InstagramLaravel\Domain\ValueObjects\Concerns\HasCommaString;
+
 enum Scope: string
 {
+    use HasCommaString;
     case Basic           = 'instagram_business_basic';
     case ContentPublish  = 'instagram_business_content_publish';
     case ManageMessages  = 'instagram_business_manage_messages';
@@ -22,13 +25,5 @@ enum Scope: string
         return array_map(fn (string $v) => self::from($v), $values);
     }
 
-    /**
-     * Serialize a collection of Scope cases to a comma-separated string.
-     *
-     * @param  self[]  $scopes
-     */
-    public static function toString(array $scopes): string
-    {
-        return implode(',', array_map(fn (self $s) => $s->value, $scopes));
-    }
+
 }
