@@ -7,6 +7,7 @@ namespace Andmarruda\InstagramLaravel\Laravel\Facades;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\AccessToken;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\AccountMetric;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\CarouselItem;
+use Andmarruda\InstagramLaravel\Domain\ValueObjects\Comment;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\ContainerStatus;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\InsightMetric;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\InsightPeriod;
@@ -35,6 +36,14 @@ use Illuminate\Support\Facades\Facade;
  * Insights
  * @method static InsightMetric[] accountInsights(string $igId, string $accessToken, AccountMetric[] $metrics, InsightPeriod $period = InsightPeriod::Day, array $options = [])
  * @method static InsightMetric[] mediaInsights(string $mediaId, string $accessToken, MediaMetric[] $metrics)
+ *
+ * Comment Moderation
+ * @method static Comment[] mediaComments(string $mediaId, string $accessToken)
+ * @method static Comment[] commentReplies(string $commentId, string $accessToken)
+ * @method static string    replyToComment(string $commentId, string $accessToken, string $message)
+ * @method static bool      hideComment(string $commentId, string $accessToken, bool $hide = true)
+ * @method static bool      deleteComment(string $commentId, string $accessToken)
+ * @method static bool      toggleMediaComments(string $mediaId, string $accessToken, bool $enabled)
  *
  * @see InstagramManager
  */

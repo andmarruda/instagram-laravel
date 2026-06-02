@@ -8,17 +8,24 @@ use Andmarruda\InstagramLaravel\Application\UseCases\CheckContainerStatusUseCase
 use Andmarruda\InstagramLaravel\Application\UseCases\CreateCarouselContainerUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\CreateImageContainerUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\CreateVideoContainerUseCase;
+use Andmarruda\InstagramLaravel\Application\UseCases\DeleteCommentUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\ExchangeCodeForTokenUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\GetAccountInsightsUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\GetAuthorizationUrlUseCase;
+use Andmarruda\InstagramLaravel\Application\UseCases\GetCommentRepliesUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\GetLongLivedTokenUseCase;
+use Andmarruda\InstagramLaravel\Application\UseCases\GetMediaCommentsUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\GetMediaInsightsUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\GetPublishingLimitUseCase;
+use Andmarruda\InstagramLaravel\Application\UseCases\HideCommentUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\PublishContainerUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\RefreshLongLivedTokenUseCase;
+use Andmarruda\InstagramLaravel\Application\UseCases\ReplyToCommentUseCase;
+use Andmarruda\InstagramLaravel\Application\UseCases\ToggleMediaCommentsUseCase;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\AccessToken;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\AccountMetric;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\CarouselItem;
+use Andmarruda\InstagramLaravel\Domain\ValueObjects\Comment;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\ContainerStatus;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\InsightMetric;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\InsightPeriod;
@@ -45,6 +52,13 @@ final class InstagramManager
         // Insights
         private readonly GetAccountInsightsUseCase $getAccountInsightsUseCase,
         private readonly GetMediaInsightsUseCase $getMediaInsightsUseCase,
+        // Comment Moderation
+        private readonly GetMediaCommentsUseCase $getMediaCommentsUseCase,
+        private readonly GetCommentRepliesUseCase $getCommentRepliesUseCase,
+        private readonly ReplyToCommentUseCase $replyToCommentUseCase,
+        private readonly HideCommentUseCase $hideCommentUseCase,
+        private readonly DeleteCommentUseCase $deleteCommentUseCase,
+        private readonly ToggleMediaCommentsUseCase $toggleMediaCommentsUseCase,
     ) {}
 
     // =========================================================================
@@ -195,5 +209,63 @@ final class InstagramManager
         array $metrics,
     ): array {
         return $this->getMediaInsightsUseCase->execute($mediaId, $accessToken, $metrics);
+    }
+
+    // =========================================================================
+    // Comment Moderation
+    // =========================================================================
+
+    /**
+     * Get all comments on a published Instagram media object.
+     *
+     * @return Comment[]
+     */
+    public function mediaComments(string $mediaId, string $accessToken): array
+    {
+        return $this->getMediaCommentsUseCase->execute($mediaId, $accessToken);
+    }
+
+    /**
+     * Get all replies to an Instagram comment.
+     *
+     * @return Comment[]
+     */
+    public function commentReplies(string $commentId, string $accessToken): array
+    {
+        return $this->getCommentRepliesUseCase->execute($commentId, $accessToken);
+    }
+
+    /**
+     * Reply to an Instagram comment.
+     *
+     * @return string ID of the newly created reply comment
+     */
+    public function replyToComment(string $commentId, string $accessToken, string $message): string
+    {
+        return $this->replyToCommentUseCase->execute($commentId, $accessToken, $message);
+    }
+
+    /**
+     * Hide or unhide an Instagram comment.
+     */
+    public function hideComment(string $commentId, string $accessToken, bool $hide = true): bool
+    {
+        return $this->hideCommentUseCase->execute($commentId, $accessToken, $hide);
+    }
+
+    /**
+     * Delete an Instagram comment.
+     */
+    public function deleteComment(string $commentId, string $accessToken): bool
+    {
+        return $this->deleteCommentUseCase->execute($commentId, $accessToken);
+    }
+
+    /**
+     * Enable or disable comments on an Instagram media object.
+     */
+    public function toggleMediaComments(string $mediaId, string $accessToken, bool $enabled): bool
+    {
+        return $this->toggleMediaCommentsUseCase->execute($mediaId, $accessToken, $enabled);
     }
 }

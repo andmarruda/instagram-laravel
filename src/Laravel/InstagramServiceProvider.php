@@ -8,17 +8,25 @@ use Andmarruda\InstagramLaravel\Application\UseCases\CheckContainerStatusUseCase
 use Andmarruda\InstagramLaravel\Application\UseCases\CreateCarouselContainerUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\CreateImageContainerUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\CreateVideoContainerUseCase;
+use Andmarruda\InstagramLaravel\Application\UseCases\DeleteCommentUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\ExchangeCodeForTokenUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\GetAuthorizationUrlUseCase;
+use Andmarruda\InstagramLaravel\Application\UseCases\GetCommentRepliesUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\GetLongLivedTokenUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\GetAccountInsightsUseCase;
+use Andmarruda\InstagramLaravel\Application\UseCases\GetMediaCommentsUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\GetMediaInsightsUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\GetPublishingLimitUseCase;
+use Andmarruda\InstagramLaravel\Application\UseCases\HideCommentUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\PublishContainerUseCase;
 use Andmarruda\InstagramLaravel\Application\UseCases\RefreshLongLivedTokenUseCase;
+use Andmarruda\InstagramLaravel\Application\UseCases\ReplyToCommentUseCase;
+use Andmarruda\InstagramLaravel\Application\UseCases\ToggleMediaCommentsUseCase;
+use Andmarruda\InstagramLaravel\Domain\Contracts\CommentModerationClientInterface;
 use Andmarruda\InstagramLaravel\Domain\Contracts\ContentPublishingClientInterface;
 use Andmarruda\InstagramLaravel\Domain\Contracts\InsightsClientInterface;
 use Andmarruda\InstagramLaravel\Domain\Contracts\OAuthClientInterface;
+use Andmarruda\InstagramLaravel\Infrastructure\Http\InstagramCommentModerationHttpAdapter;
 use Andmarruda\InstagramLaravel\Infrastructure\Http\InstagramContentPublishingHttpAdapter;
 use Andmarruda\InstagramLaravel\Infrastructure\Http\InstagramInsightsHttpAdapter;
 use Andmarruda\InstagramLaravel\Infrastructure\Http\InstagramOAuthHttpAdapter;
@@ -99,6 +107,29 @@ class InstagramServiceProvider extends ServiceProvider
         $this->app->bind(GetMediaInsightsUseCase::class, fn ($app) =>
             new GetMediaInsightsUseCase($app->make(InsightsClientInterface::class)));
 
+        // --- Comment Moderation ---
+
+        $this->app->singleton(CommentModerationClientInterface::class, fn ($app) =>
+            new InstagramCommentModerationHttpAdapter($app->make(ClientInterface::class)));
+
+        $this->app->bind(GetMediaCommentsUseCase::class, fn ($app) =>
+            new GetMediaCommentsUseCase($app->make(CommentModerationClientInterface::class)));
+
+        $this->app->bind(GetCommentRepliesUseCase::class, fn ($app) =>
+            new GetCommentRepliesUseCase($app->make(CommentModerationClientInterface::class)));
+
+        $this->app->bind(ReplyToCommentUseCase::class, fn ($app) =>
+            new ReplyToCommentUseCase($app->make(CommentModerationClientInterface::class)));
+
+        $this->app->bind(HideCommentUseCase::class, fn ($app) =>
+            new HideCommentUseCase($app->make(CommentModerationClientInterface::class)));
+
+        $this->app->bind(DeleteCommentUseCase::class, fn ($app) =>
+            new DeleteCommentUseCase($app->make(CommentModerationClientInterface::class)));
+
+        $this->app->bind(ToggleMediaCommentsUseCase::class, fn ($app) =>
+            new ToggleMediaCommentsUseCase($app->make(CommentModerationClientInterface::class)));
+
         // --- Manager ---
 
         $this->app->singleton(InstagramManager::class, fn ($app) => new InstagramManager(
@@ -114,6 +145,12 @@ class InstagramServiceProvider extends ServiceProvider
             $app->make(GetPublishingLimitUseCase::class),
             $app->make(GetAccountInsightsUseCase::class),
             $app->make(GetMediaInsightsUseCase::class),
+            $app->make(GetMediaCommentsUseCase::class),
+            $app->make(GetCommentRepliesUseCase::class),
+            $app->make(ReplyToCommentUseCase::class),
+            $app->make(HideCommentUseCase::class),
+            $app->make(DeleteCommentUseCase::class),
+            $app->make(ToggleMediaCommentsUseCase::class),
         ));
     }
 
