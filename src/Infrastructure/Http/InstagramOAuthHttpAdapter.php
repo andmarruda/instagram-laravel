@@ -9,8 +9,8 @@ use Andmarruda\InstagramLaravel\Domain\ValueObjects\AccessToken;
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\Scope;
 use Andmarruda\InstagramLaravel\Infrastructure\Http\Exceptions\InstagramOAuthException;
 use GuzzleHttp\ClientInterface;
-use GuzzleHttp\Exception\GuzzleException;
 use Psr\Http\Message\StreamInterface;
+use Throwable;
 
 final class InstagramOAuthHttpAdapter implements OAuthClientInterface
 {
@@ -60,18 +60,24 @@ final class InstagramOAuthHttpAdapter implements OAuthClientInterface
             $this->assertNoError($body);
 
             return AccessToken::fromShortLivedResponse($body);
-        } catch (GuzzleException $e) {
+        } catch (InstagramOAuthException $e) {
+            throw $e;
+        } catch (Throwable $e) {
             throw new InstagramOAuthException('Failed to exchange code for token: ' . $e->getMessage(), previous: $e);
         }
     }
 
-    public function getLongLivedToken(string $shortLivedToken): AccessToken
+    public function getLongLivedToken(string|AccessToken $shortLivedToken): AccessToken
     {
+        $userId      = $shortLivedToken instanceof AccessToken ? $shortLivedToken->userId : '';
+        $permissions = $shortLivedToken instanceof AccessToken ? $shortLivedToken->permissions : [];
+        $token       = $shortLivedToken instanceof AccessToken ? $shortLivedToken->token : $shortLivedToken;
+
         return $this->fetchLongLivedToken('/access_token', [
             'grant_type'    => 'ig_exchange_token',
             'client_secret' => $this->clientSecret,
-            'access_token'  => $shortLivedToken,
-        ], 'Failed to get long-lived token');
+            'access_token'  => $token,
+        ], 'Failed to get long-lived token', $userId, $permissions);
     }
 
     public function refreshLongLivedToken(string $longLivedToken): AccessToken
@@ -86,7 +92,13 @@ final class InstagramOAuthHttpAdapter implements OAuthClientInterface
     // Internals
     // -------------------------------------------------------------------------
 
-    private function fetchLongLivedToken(string $path, array $query, string $errorPrefix): AccessToken
+    private function fetchLongLivedToken(
+        string $path,
+        array $query,
+        string $errorPrefix,
+        string $userId = '',
+        array $permissions = [],
+    ): AccessToken
     {
         try {
             $response = $this->httpClient->request('GET', self::GRAPH_BASE_URL . $path, [
@@ -96,8 +108,10 @@ final class InstagramOAuthHttpAdapter implements OAuthClientInterface
             $body = $this->decode($response->getBody());
             $this->assertNoError($body);
 
-            return AccessToken::fromLongLivedResponse($body);
-        } catch (GuzzleException $e) {
+            return AccessToken::fromLongLivedResponse($body, $userId, $permissions);
+        } catch (InstagramOAuthException $e) {
+            throw $e;
+        } catch (Throwable $e) {
             throw new InstagramOAuthException($errorPrefix . ': ' . $e->getMessage(), previous: $e);
         }
     }

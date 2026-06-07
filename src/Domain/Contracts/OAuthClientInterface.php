@@ -24,8 +24,10 @@ interface OAuthClientInterface
 
     /**
      * Exchange a valid short-lived token for a long-lived token (valid 60 days).
+     *
+     * Pass the AccessToken value object to preserve its user ID and permissions.
      */
-    public function getLongLivedToken(string $shortLivedToken): AccessToken;
+    public function getLongLivedToken(string|AccessToken $shortLivedToken): AccessToken;
 
     /**
      * Refresh a long-lived token for another 60 days.

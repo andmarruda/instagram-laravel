@@ -185,7 +185,8 @@ echo $token->expiresIn;  // 3600 (seconds)
 ### Step 3 — Upgrade to a long-lived token (valid 60 days)
 
 ```php
-$longLived = Instagram::longLivedToken($token->token);
+// Pass the value object to preserve its user ID and permissions.
+$longLived = Instagram::longLivedToken($token);
 
 echo $longLived->expiresAt()?->format('Y-m-d'); // 2025-08-03
 echo $longLived->isExpired();                   // false
@@ -721,7 +722,8 @@ echo $token->expiresIn;  // 3600 (segundos)
 ### Etapa 3 — Obtenha um token de longa duração (válido por 60 dias)
 
 ```php
-$longLived = Instagram::longLivedToken($token->token);
+// Passe o value object para preservar o ID do usuário e as permissões.
+$longLived = Instagram::longLivedToken($token);
 
 echo $longLived->expiresAt()?->format('d/m/Y'); // 03/08/2025
 echo $longLived->isExpired();                   // false

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Andmarruda\InstagramLaravel\Tests\Unit\Domain\ValueObjects;
 
 use Andmarruda\InstagramLaravel\Domain\ValueObjects\AccessToken;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 class AccessTokenTest extends TestCase
@@ -43,6 +44,71 @@ class AccessTokenTest extends TestCase
 
         $this->assertSame('EAACEdEose0xyz', $token->token);
         $this->assertSame('999', $token->userId);
+    }
+
+    public function test_from_short_lived_response_with_permissions_array(): void
+    {
+        $token = AccessToken::fromShortLivedResponse([
+            'access_token' => 'token',
+            'user_id'      => '123',
+            'permissions'  => [
+                'instagram_business_basic',
+                '',
+                null,
+                'instagram_business_content_publish',
+            ],
+        ]);
+
+        $this->assertSame(
+            ['instagram_business_basic', 'instagram_business_content_publish'],
+            $token->permissions
+        );
+    }
+
+    public function test_from_short_lived_response_trims_csv_permissions(): void
+    {
+        $token = AccessToken::fromShortLivedResponse([
+            'access_token' => 'token',
+            'user_id'      => '123',
+            'permissions'  => 'instagram_business_basic, , instagram_business_content_publish',
+        ]);
+
+        $this->assertSame(
+            ['instagram_business_basic', 'instagram_business_content_publish'],
+            $token->permissions
+        );
+    }
+
+    public function test_from_short_lived_response_with_missing_or_invalid_permissions(): void
+    {
+        $withoutPermissions = AccessToken::fromShortLivedResponse([
+            'access_token' => 'token',
+            'user_id'      => '123',
+        ]);
+        $withInvalidPermissions = AccessToken::fromShortLivedResponse([
+            'access_token' => 'token',
+            'user_id'      => '123',
+            'permissions'  => 123,
+        ]);
+
+        $this->assertSame([], $withoutPermissions->permissions);
+        $this->assertSame([], $withInvalidPermissions->permissions);
+    }
+
+    public function test_from_short_lived_response_requires_access_token(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('access_token');
+
+        AccessToken::fromShortLivedResponse(['user_id' => '123']);
+    }
+
+    public function test_from_short_lived_response_requires_user_id(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('user_id');
+
+        AccessToken::fromShortLivedResponse(['access_token' => 'token']);
     }
 
     public function test_from_long_lived_response(): void

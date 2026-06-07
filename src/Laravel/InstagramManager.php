@@ -82,7 +82,7 @@ final class InstagramManager
         return $this->exchangeCodeForTokenUseCase->execute($code, $redirectUri ?? config('instagram.redirect_uri'));
     }
 
-    public function longLivedToken(string $shortLivedToken): AccessToken
+    public function longLivedToken(string|AccessToken $shortLivedToken): AccessToken
     {
         return $this->getLongLivedTokenUseCase->execute($shortLivedToken);
     }

@@ -16,7 +16,7 @@ final class GetLongLivedTokenUseCase
     /**
      * Exchange a valid short-lived token for a long-lived token (valid 60 days).
      */
-    public function execute(string $shortLivedToken): AccessToken
+    public function execute(string|AccessToken $shortLivedToken): AccessToken
     {
         return $this->oauthClient->getLongLivedToken($shortLivedToken);
     }
