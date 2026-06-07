@@ -17,13 +17,29 @@ enum Scope: string
     /**
      * Build a Scope collection from an array of string values.
      *
-     * @param  string[]  $values
+     * @param  array<int, self|string|null>  $values
      * @return self[]
      */
     public static function fromArray(array $values): array
     {
-        return array_map(fn (string $v) => self::from($v), $values);
+        $scopes = [];
+
+        foreach ($values as $value) {
+            if ($value instanceof self) {
+                $scopes[] = $value;
+
+                continue;
+            }
+
+            $value = trim((string) $value);
+
+            if ($value === '') {
+                continue;
+            }
+
+            $scopes[] = self::from($value);
+        }
+
+        return $scopes;
     }
-
-
 }

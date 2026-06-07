@@ -18,6 +18,13 @@ class MetricEnumTest extends TestCase
         $this->assertSame('instagram_business_basic,instagram_business_content_publish', $result);
     }
 
+    public function test_scope_from_array_ignores_blank_values(): void
+    {
+        $result = Scope::fromArray(['', ' instagram_business_basic ', null, 'instagram_business_content_publish']);
+
+        $this->assertSame([Scope::Basic, Scope::ContentPublish], $result);
+    }
+
     public function test_account_metric_to_string_serializes_comma_separated(): void
     {
         $result = AccountMetric::toString([AccountMetric::Impressions, AccountMetric::Reach, AccountMetric::ProfileViews]);

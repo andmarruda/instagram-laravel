@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+$scopes = array_values(array_filter(
+    array_map('trim', explode(',', env('INSTAGRAM_SCOPES', 'instagram_business_basic'))),
+    static fn (string $scope): bool => $scope !== '',
+));
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -37,5 +42,5 @@ return [
     |            instagram_business_manage_messages, instagram_business_manage_comments
     |
     */
-    'scopes' => explode(',', env('INSTAGRAM_SCOPES', 'instagram_business_basic')),
+    'scopes' => $scopes ?: ['instagram_business_basic'],
 ];
