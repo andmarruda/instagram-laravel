@@ -75,8 +75,7 @@ final class InstagramContentPublishingHttpAdapter implements ContentPublishingCl
     {
         try {
             $response = $this->httpClient->request('GET', $this->url($containerId), [
-                'headers' => $this->buildHeaders($accessToken),
-                'query'   => ['fields' => 'status_code'],
+                'query' => $this->apiParams($accessToken, ['fields' => 'status_code']),
             ]);
 
             $body = $this->decode($response->getBody());
@@ -95,8 +94,7 @@ final class InstagramContentPublishingHttpAdapter implements ContentPublishingCl
     {
         try {
             $response = $this->httpClient->request('POST', $this->url("{$igId}/media_publish"), [
-                'headers' => $this->buildHeaders($accessToken, json: true),
-                'json'    => ['creation_id' => $containerId],
+                'query' => $this->apiParams($accessToken, ['creation_id' => $containerId]),
             ]);
 
             $body = $this->decode($response->getBody());
@@ -115,8 +113,7 @@ final class InstagramContentPublishingHttpAdapter implements ContentPublishingCl
     {
         try {
             $response = $this->httpClient->request('GET', $this->url("{$igId}/content_publishing_limit"), [
-                'headers' => $this->buildHeaders($accessToken),
-                'query'   => ['fields' => 'config,quota_usage'],
+                'query' => $this->apiParams($accessToken, ['fields' => 'config,quota_usage']),
             ]);
 
             $body = $this->decode($response->getBody());
@@ -139,8 +136,7 @@ final class InstagramContentPublishingHttpAdapter implements ContentPublishingCl
     {
         try {
             $response = $this->httpClient->request('POST', $this->url("{$igId}/media"), [
-                'headers' => $this->buildHeaders($accessToken, json: true),
-                'json'    => $payload,
+                'query' => $this->apiParams($accessToken, $payload),
             ]);
 
             $body = $this->decode($response->getBody());
@@ -153,6 +149,37 @@ final class InstagramContentPublishingHttpAdapter implements ContentPublishingCl
                 previous: $e,
             );
         }
+    }
+
+    /**
+     * Meta documents Content Publishing parameters as request parameters, with
+     * access_token included alongside fields such as image_url and creation_id.
+     *
+     * @param  array<string, mixed>  $params
+     *
+     * @return array<string, mixed>
+     */
+    private function apiParams(string $accessToken, array $params = []): array
+    {
+        $normalized = ['access_token' => $accessToken];
+
+        foreach ($params as $key => $value) {
+            if (is_bool($value)) {
+                $normalized[$key] = $value ? 'true' : 'false';
+
+                continue;
+            }
+
+            if (is_array($value)) {
+                $normalized[$key] = json_encode($value, JSON_THROW_ON_ERROR);
+
+                continue;
+            }
+
+            $normalized[$key] = $value;
+        }
+
+        return $normalized;
     }
 
     /** @throws InstagramPublishingException */

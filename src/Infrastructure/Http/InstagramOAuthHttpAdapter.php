@@ -30,7 +30,10 @@ final class InstagramOAuthHttpAdapter implements OAuthClientInterface
      */
     public function buildAuthorizationUrl(string $redirectUri, array $scopes, array $options = []): string
     {
-        $params = array_merge($options, [
+        $params = array_merge([
+            'enable_fb_login'      => '0',
+            'force_authentication' => '1',
+        ], $options, [
             'client_id'     => $this->clientId,
             'redirect_uri'  => $redirectUri,
             'response_type' => 'code',
@@ -43,7 +46,9 @@ final class InstagramOAuthHttpAdapter implements OAuthClientInterface
     public function exchangeCodeForToken(string $code, string $redirectUri): AccessToken
     {
         // Strip the trailing "#_" that Instagram appends to the redirect URI.
-        $code = rtrim($code, '#_');
+        if (str_ends_with($code, '#_')) {
+            $code = substr($code, 0, -2);
+        }
 
         try {
             $response = $this->httpClient->request('POST', self::TOKEN_URL, [
@@ -128,9 +133,21 @@ final class InstagramOAuthHttpAdapter implements OAuthClientInterface
      */
     private function assertNoError(array $body): void
     {
+        if (isset($body['error']) && is_array($body['error'])) {
+            $message = $body['error']['message']
+                ?? $body['error']['error_user_msg']
+                ?? 'Unknown Instagram API error';
+            $code = $body['error']['code'] ?? 0;
+
+            throw new InstagramOAuthException($message, (int) $code);
+        }
+
         if (isset($body['error_type']) || isset($body['error'])) {
-            $message = $body['error_message'] ?? $body['error_description'] ?? 'Unknown Instagram API error';
-            $code    = $body['code'] ?? 0;
+            $message = $body['error_message']
+                ?? $body['error_description']
+                ?? (is_string($body['error'] ?? null) ? $body['error'] : null)
+                ?? 'Unknown Instagram API error';
+            $code = $body['code'] ?? 0;
 
             throw new InstagramOAuthException($message, (int) $code);
         }
